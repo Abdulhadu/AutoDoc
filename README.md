@@ -33,7 +33,7 @@ First, obtain a Google AI API key from [Google AI Studio](https://ai.google.dev/
 Set it as an environment variable:
 
 ```bash
-export GOOGLE_API_KEY="AIzaSyAofneVWjTZqe--s_f0g-nyzQBTTGzP8Xo"
+export GOOGLE_API_KEY=""
 ```
 
 ### 2. Using the CLI

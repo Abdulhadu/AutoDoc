@@ -10,6 +10,15 @@ An AI-powered documentation generator for Python projects using Google's Gemini 
 - Offers both CLI and Python API interfaces
 - Configurable with YAML/JSON configuration files
 
+
+## Demo
+
+<video width="600" controls autoplay muted>
+  <source src="AutoDoc/media/20250503-1314-30.1224495.mp4" type="video/mp4">
+  Your browser does not support the video tag.
+</video>
+
+
 ## Installation
 
 ```bash
@@ -88,6 +97,7 @@ output:
   index_title: "My Project Documentation"
   group_by: "module"  # or "type" or "flat"
 ```
+
 
 ## License
 

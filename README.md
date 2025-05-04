@@ -17,7 +17,7 @@ An AI-powered documentation generator for Python projects using Google's Gemini 
   <source src="AutoDoc/media/20250503-1314-30.1224495.mp4" type="video/mp4">
   Your browser does not support the video tag.
 </video> -->
-![AutoDoc Demo](https://github.com/Abdulhadu/AutoDoc/blob/main/AutoDoc/media/20250503-1314-30.1224495.gif))
+![AutoDoc Demo](https://github.com/Abdulhadu/AutoDoc/blob/main/AutoDoc/media/20250503-1314-30.1224495.gif)
 
 ## Installation
 

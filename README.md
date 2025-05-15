@@ -2,22 +2,16 @@
 
 An AI-powered documentation generator for Python projects using Google's Gemini models via LangChain.
 
+
 ## Features
 
-- Automatically scans Python codebases to generate comprehensive documentation
-- Uses Google's Gemini models via LangChain for high-quality documentation
-- Generates Markdown/HTML documentation for functions, classes, and modules
-- Offers both CLI and Python API interfaces
-- Configurable with YAML/JSON configuration files
-
-
-## Demo
-<!-- 
-<video width="600" controls autoplay muted>
-  <source src="AutoDoc/media/20250503-1314-30.1224495.mp4" type="video/mp4">
-  Your browser does not support the video tag.
-</video> -->
-![AutoDoc Demo](/AutoDoc/media/AutoDoc/20250503-1314-30.1224495.gif)
+- Generates comprehensive AI-powered documentation for Python projects
+- Consolidates all documentation into a single Markdown file
+- Optionally converts documentation to PDF format
+- Organizes documentation by module, type, or flat structure
+- Uses Google Gemini AI models for high-quality documentation generation
+- **No third-party PDF libraries required** - uses system tools for PDF conversion
+- Generates non-technical documentation along with technical documentation
 
 ## Installation
 
@@ -41,21 +35,96 @@ First, obtain a Google AI API key from [Google AI Studio](https://ai.google.dev/
 
 Set it as an environment variable:
 
+IN BASH
 ```bash
-export GOOGLE_API_KEY=""
+export GOOGLE_API_KEY="your-api-key-here"
 ```
 
-### 2. Using the CLI
+IN POWERSHELL
 
-Generate documentation for a Python project:
-
-```bash
-autodoc generate --source ./my_project --output ./docs
-# Or set the api key as an environment variable:
-autodoc generate --source ./my_project --output ./docs --api-key ""
+```powershell
+$Env:API_KEY="your-api-key-here"
 ```
 
-### 3. Using the Python API
+## Usage
+
+The tool provides two main commands:
+
+### 1. Generate Documentation
+
+```bash
+python main.py generate --source /path/to/your/code --output /path/to/output/dir --api-key YOUR_GOOGLE_API_KEY --pdf
+```
+
+### 2. Convert Existing Markdown to PDF
+
+```bash
+python main.py md-to-pdf input.md --output output.pdf
+```
+
+## Command Line Arguments
+
+### Generate Command
+
+- `--source`, `-s`: Source code directory (default: current directory)
+- `--output`, `-o`: Output directory (default: ./docs)
+- `--config`, `-c`: Path to configuration file (optional)
+- `--api-key`, `-k`: Google AI API key (can also be set via GOOGLE_API_KEY environment variable)
+- `--title`, `-t`: Documentation title (default: "Complete API Documentation")
+- `--group-by`, `-g`: How to group the documentation, options are "module", "type", or "flat" (default: "module")
+- `--pdf`: Add this flag to also generate PDF documentation
+- `--non-tech`: Add this flag to generate non-technical documentation
+
+### MD-to-PDF Command
+
+- `input`: Input Markdown file
+- `--output`, `-o`: Output PDF file path (optional)
+
+### Environment Variables
+
+- `GOOGLE_API_KEY`: Your Google AI API key
+
+## Output
+
+The script generates documentation files in your specified output directory:
+- `consolidated_documentation.md`: Markdown documentation file
+- `consolidated_documentation.pdf`: PDF documentation file (if --pdf flag is used)
+
+## PDF Generation
+
+The PDF conversion works across different operating systems:
+- **Windows**: Uses Microsoft Edge or system browser
+- **macOS**: Uses built-in textutil and cupsfilter
+- **Linux**: Tries various tools like wkhtmltopdf, weasyprint, chromium, or chrome
+
+No third-party Python libraries are required for PDF generation.
+
+## How It Works
+
+1. Uses AutoDoc's `CodeParser` to extract code units from your Python files
+2. Uses AutoDoc's `AIDocGenerator` to generate documentation for each code unit
+3. Uses a custom `ConsolidatedDocumentationRenderer` to render all documentation into a single file
+4. Optionally converts the Markdown to PDF using system tools
+
+## Examples
+
+```bash
+# Generate Markdown documentation grouped by module
+python main.py generate --source ./my_project --output ./docs --group-by module
+
+# Generate both Markdown and PDF documentation
+python main.py generate --source ./my_project --output ./docs --pdf
+
+#generate non-technical documentation along with pdf
+python main.py generate --source ./my_project --output ./docs --pdf --non-tech
+
+# Convert an existing Markdown file to PDF
+python main.py md-to-pdf ./docs/consolidated_documentation.md --output ./docs/documentation.pdf
+
+```
+
+
+### Using the Python API
 
 ```python
 from autodoc import AutoDoc

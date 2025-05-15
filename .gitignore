@@ -45,3 +45,9 @@ docs/
 .coverage
 htmlcov/
 .pytest_cache/
+
+.env.local
+.env
+newdocs/*
+my_project/my_project.py
+docs/*

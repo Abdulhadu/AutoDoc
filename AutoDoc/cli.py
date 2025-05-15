@@ -47,6 +47,16 @@ def generate_docs(
         help="Google AI API key (defaults to GOOGLE_API_KEY env var)",
         envvar="GOOGLE_API_KEY", 
     ),
+    pdf: bool = typer.Option(
+        False,
+        "--pdf",
+        help="Also generate PDF documentation",
+    ),
+    non_tech: bool = typer.Option(
+        False,
+        "--non-tech",
+        help="Generate non-technical documentation for end users",
+    ),
 ):
     """Generate documentation for a Python project."""
     start_time = time.time()
@@ -92,7 +102,10 @@ def generate_docs(
             
             # Generate documentation
             progress.update(task, description="Generating documentation...")
-            index_path = doc_generator.generate()
+            result = doc_generator.generate(
+                generate_pdf=pdf,
+                non_tech=non_tech
+            )
             
             progress.update(task, description="Documentation generated!", completed=True)
     
@@ -105,8 +118,9 @@ def generate_docs(
     rprint(Panel(
         f"[bold green]Documentation generated successfully![/bold green]\n\n"
         f"Output directory: [bold]{output}[/bold]\n"
-        f"Index file: [bold]{os.path.basename(index_path)}[/bold]\n"
-        f"Time taken: [bold]{elapsed:.2f}[/bold] seconds",
+        f"Markdown file: [bold]{os.path.basename(result['markdown'])}[/bold]\n"
+        + (f"PDF file: [bold]{os.path.basename(result['pdf'])}[/bold]\n" if 'pdf' in result else "")
+        + f"Time taken: [bold]{elapsed:.2f}[/bold] seconds",
         title="Complete",
         expand=False
     ))

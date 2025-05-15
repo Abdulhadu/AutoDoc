@@ -1,7 +1,7 @@
 """AutoDoc: AI-powered documentation generator for Python projects."""
 
 import os
-from typing import Dict, List, Optional, Union
+from typing import Dict, List, Optional, Union, Tuple
 
 from autodoc.config import load_config
 from autodoc.parser import CodeParser
@@ -64,12 +64,46 @@ class AutoDoc:
             group_by=self.config.get("output", {}).get("group_by", "module"),
         )
     
-    def generate(self) -> str:
+    def generate(self, generate_pdf: bool = False, non_tech: bool = False) -> Dict[str, str]:
         """
         Generate documentation for the source code.
         
+        Args:
+            generate_pdf: Whether to also generate a PDF version
+            non_tech: Whether to generate non-technical documentation
+            
         Returns:
-            Path to the generated documentation index file
+            Dictionary with paths to the generated files
+        """
+        # Parse the code
+        code_units = self.parser.parse()
+        
+        # Generate documentation with AI
+        docs = self.ai_generator.generate_docs(code_units, non_tech=non_tech)
+        
+        # Determine output filename based on documentation type
+        base_name = "non_tech_documentation" if non_tech else "consolidated_documentation"
+        
+        # Render the documentation
+        md_path = self.renderer.render(docs, base_name=base_name)
+        
+        result = {"markdown": md_path}
+        
+        # Generate PDF if requested
+        if generate_pdf:
+            from autodoc.pdf_converter import convert_markdown_to_pdf
+            pdf_path = os.path.join(self.output_dir, f"{base_name}.pdf")
+            if convert_markdown_to_pdf(md_path, pdf_path):
+                result["pdf"] = pdf_path
+        
+        return result
+
+    def generate_all(self) -> Tuple[str, str]:
+        """
+        Generate both Markdown and PDF documentation for the source code.
+        
+        Returns:
+            Tuple of (markdown_path, pdf_path)
         """
         # Parse the code
         code_units = self.parser.parse()
@@ -77,7 +111,7 @@ class AutoDoc:
         # Generate documentation with AI
         docs = self.ai_generator.generate_docs(code_units)
         
-        # Render the documentation
-        index_path = self.renderer.render(docs)
+        # Render both formats
+        md_path, pdf_path = self.renderer.render_all(docs)
         
-        return index_path
+        return md_path, pdf_path

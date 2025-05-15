@@ -136,6 +136,44 @@ RESPONSE FORMAT:
 RESPONSE:
 """
 
+NON_TECH_TEMPLATE = """
+You are an expert technical writer creating documentation for non-technical users. Given the following Python code, generate clear, non-technical documentation that:
+
+1. Explains what the code does in simple terms
+2. For APIs:
+   - Shows the URL path
+   - Describes the main purpose
+   - Shows example request/response (without technical details)
+3. For functions/classes:
+   - Explains the main purpose
+   - Shows how to use it (without code)
+   - Groups helper functions with their main functions
+4. Avoids technical terms and code snippets
+5. Uses simple, clear language
+
+CODE:
+```python
+{source}
+```
+
+RESPONSE FORMAT:
+# {name}
+
+[Simple description of what this does]
+
+## What This Does
+[Clear explanation of functionality]
+
+## How to Use
+[Simple steps to use this feature]
+
+## Example
+[Simple example without code]
+
+## Related Features
+[List of related helper functions or components]
+"""
+
 
 class AIDocGenerator:
     """AI-powered documentation generator using Gemini models via LangChain."""
@@ -199,6 +237,15 @@ class AIDocGenerator:
             ),
         )
         
+        # Add non-tech chain
+        self.non_tech_chain = LLMChain(
+            llm=self.llm,
+            prompt=PromptTemplate(
+                input_variables=["source", "name"],
+                template=NON_TECH_TEMPLATE
+            )
+        )
+        
         # Create cache directory if provided
         if cache_dir:
             os.makedirs(cache_dir, exist_ok=True)
@@ -235,7 +282,7 @@ class AIDocGenerator:
         with open(cache_file, "w") as f:
             json.dump({"documentation": documentation}, f)
     
-    def _generate_doc_for_unit(self, code_unit: CodeUnit) -> Dict[str, Any]:
+    def _generate_doc_for_unit(self, code_unit: CodeUnit, non_tech: bool = False) -> Dict[str, Any]:
         """Generate documentation for a single code unit."""
         # Check cache first
         cache_key = self._get_cache_key(code_unit)
@@ -250,27 +297,34 @@ class AIDocGenerator:
         
         # Generate documentation based on code unit type
         try:
-            if code_unit.type == "function" or code_unit.type == "method":
-                result = self.function_chain.invoke({
+            if non_tech:
+                result = self.non_tech_chain.invoke({
                     "source": code_unit.source,
                     "name": code_unit.name,
-                })
-                doc = result["text"]
-            elif code_unit.type == "class":
-                result = self.class_chain.invoke({
-                    "source": code_unit.source,
-                    "name": code_unit.name,
-                })
-                doc = result["text"]
-            elif code_unit.type == "module":
-                result = self.module_chain.invoke({
-                    "name": code_unit.name,
-                    "docstring": code_unit.docstring or "No docstring provided",
                 })
                 doc = result["text"]
             else:
-                doc = f"# {code_unit.name}\n\nNo documentation available for this type of code unit."
-                
+                if code_unit.type == "function" or code_unit.type == "method":
+                    result = self.function_chain.invoke({
+                        "source": code_unit.source,
+                        "name": code_unit.name,
+                    })
+                    doc = result["text"]
+                elif code_unit.type == "class":
+                    result = self.class_chain.invoke({
+                        "source": code_unit.source,
+                        "name": code_unit.name,
+                    })
+                    doc = result["text"]
+                elif code_unit.type == "module":
+                    result = self.module_chain.invoke({
+                        "name": code_unit.name,
+                        "docstring": code_unit.docstring or "No docstring provided",
+                    })
+                    doc = result["text"]
+                else:
+                    doc = f"# {code_unit.name}\n\nNo documentation available for this type of code unit."
+            
             # Save to cache
             if cache_key:
                 self._save_to_cache(cache_key, doc)
@@ -288,18 +342,22 @@ class AIDocGenerator:
                 "error": str(e),
             }
     
-    def generate_docs(self, code_units: List[CodeUnit]) -> List[Dict[str, Any]]:
+    def generate_docs(self, code_units: List[CodeUnit], non_tech: bool = False) -> List[Dict[str, Any]]:
         """
         Generate documentation for multiple code units in parallel.
 
         Args:
             code_units: List of CodeUnit objects
+            non_tech: Whether to generate non-technical documentation
 
         Returns:
             List of dictionaries containing the code unit and its documentation
         """
         # Use ThreadPoolExecutor to parallelize API calls
         with ThreadPoolExecutor(max_workers=10) as executor:
-            results = list(executor.map(self._generate_doc_for_unit, code_units))
+            results = list(executor.map(
+                lambda unit: self._generate_doc_for_unit(unit, non_tech), 
+                code_units
+            ))
         
         return results

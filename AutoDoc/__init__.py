@@ -7,6 +7,7 @@ from autodoc.config import load_config
 from autodoc.parser import CodeParser
 from autodoc.ai import AIDocGenerator
 from autodoc.renderer import DocumentationRenderer
+from autodoc.test_generator import TestCaseGenerator
 
 __version__ = "0.1.0"
 
@@ -63,6 +64,14 @@ class AutoDoc:
             index_title=self.config.get("output", {}).get("index_title", "API Documentation"),
             group_by=self.config.get("output", {}).get("group_by", "module"),
         )
+        
+        # Initialize test generator
+        self.test_generator = TestCaseGenerator(
+            source_dir=self.source_dir,
+            output_dir=os.path.join(self.output_dir, "tests"),
+            framework="pytest",  # Default to pytest
+            exclude_dirs=self.config.get("source", {}).get("exclude", []),
+        )
     
     def generate(self, generate_pdf: bool = False, non_tech: bool = False) -> Dict[str, str]:
         """
@@ -98,20 +107,43 @@ class AutoDoc:
         
         return result
 
-    def generate_all(self) -> Tuple[str, str]:
+    def generate_tests(
+        self,
+        framework: str = "pytest",
+        exclude_dirs: Optional[List[str]] = None,
+    ) -> Dict[str, str]:
         """
-        Generate both Markdown and PDF documentation for the source code.
+        Generate test cases for the source code.
         
+        Args:
+            framework: Testing framework to use ('pytest' or 'unittest')
+            exclude_dirs: Additional directories to exclude
+            
         Returns:
-            Tuple of (markdown_path, pdf_path)
+            Dictionary mapping source files to generated test files
         """
-        # Parse the code
-        code_units = self.parser.parse()
+        # Update test generator configuration
+        self.test_generator.framework = framework
+        if exclude_dirs:
+            self.test_generator.parser.exclude_dirs.extend(exclude_dirs)
         
-        # Generate documentation with AI
-        docs = self.ai_generator.generate_docs(code_units)
+        # Generate test cases
+        return self.test_generator.generate()
+
+    # def generate_all(self) -> Tuple[str, str]:
+    #     """
+    #     Generate both Markdown and PDF documentation for the source code.
         
-        # Render both formats
-        md_path, pdf_path = self.renderer.render_all(docs)
+    #     Returns:
+    #         Tuple of (markdown_path, pdf_path)
+    #     """
+    #     # Parse the code
+    #     code_units = self.parser.parse()
         
-        return md_path, pdf_path
+    #     # Generate documentation with AI
+    #     docs = self.ai_generator.generate_docs(code_units)
+        
+    #     # Render both formats
+    #     md_path, pdf_path = self.renderer.render_all(docs)
+        
+    #     return md_path, pdf_path

@@ -64,16 +64,7 @@ class CodeParser:
         return code_units
     
     def _parse_file(self, file_path: str, module_path: str) -> List[CodeUnit]:
-        """
-        Parse a single Python file and extract code units.
-
-        Args:
-            file_path: Path to the Python file
-            module_path: Importable module path
-
-        Returns:
-            List of CodeUnit objects
-        """
+        """Parse a single Python file and extract code units."""
         with open(file_path, "r", encoding="utf-8") as f:
             source = f.read()
             
@@ -98,7 +89,17 @@ class CodeParser:
             # Extract classes and functions
             for node in ast.iter_child_nodes(tree):
                 if isinstance(node, ast.FunctionDef):
-                    units.append(self._extract_function(node, source, file_path, module_path))
+                    # Check for framework-specific decorators
+                    is_route = self._is_route_decorator(node)
+                    unit_type = "route" if is_route else "function"
+                    
+                    units.append(self._extract_function(
+                        node, 
+                        source, 
+                        file_path, 
+                        module_path,
+                        unit_type=unit_type
+                    ))
                 elif isinstance(node, ast.ClassDef):
                     class_unit = self._extract_class(node, source, file_path, module_path)
                     units.append(class_unit)
@@ -106,14 +107,17 @@ class CodeParser:
                     # Extract methods
                     for class_node in ast.iter_child_nodes(node):
                         if isinstance(class_node, ast.FunctionDef):
+                            is_route = self._is_route_decorator(class_node)
+                            unit_type = "route" if is_route else "method"
+                            
                             method_unit = self._extract_function(
                                 class_node, 
                                 source, 
                                 file_path, 
                                 module_path,
-                                parent=node.name
+                                parent=node.name,
+                                unit_type=unit_type
                             )
-                            method_unit.type = "method"
                             units.append(method_unit)
             
             return units
@@ -121,13 +125,31 @@ class CodeParser:
             # Skip files with syntax errors
             return []
     
+    def _is_route_decorator(self, node: ast.FunctionDef) -> bool:
+        """Check if a function has a route decorator."""
+        if not node.decorator_list:
+            return False
+        
+        for decorator in node.decorator_list:
+            if isinstance(decorator, ast.Call):
+                if isinstance(decorator.func, ast.Attribute):
+                    # Check for Flask/FastAPI route decorators
+                    if decorator.func.attr in ["route", "get", "post", "put", "delete", "patch"]:
+                        return True
+                elif isinstance(decorator.func, ast.Name):
+                    # Check for Django URL patterns
+                    if decorator.func.id in ["url", "path", "re_path"]:
+                        return True
+        return False
+    
     def _extract_function(
         self, 
         node: ast.FunctionDef, 
         source: str, 
         file_path: str, 
         module_path: str,
-        parent: str = None
+        parent: str = None,
+        unit_type: str = "function"
     ) -> CodeUnit:
         """Extract information about a function."""
         source_lines = source.splitlines()
@@ -138,7 +160,7 @@ class CodeParser:
         function_source = "\n".join(source_lines[line_start-1:line_end])
         
         return CodeUnit(
-            type="function",
+            type=unit_type,
             name=node.name,
             source=function_source,
             docstring=ast.get_docstring(node),

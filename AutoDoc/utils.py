@@ -125,3 +125,57 @@ def safe_mkdir(directory: str) -> None:
         directory: Path to the directory
     """
     os.makedirs(directory, exist_ok=True)
+
+
+def detect_framework(file_path: str) -> Optional[str]:
+    """
+    Detect the web framework used in a Python file.
+    
+    Args:
+        file_path: Path to the Python file
+        
+    Returns:
+        Framework name ('flask', 'fastapi', 'django', or None)
+    """
+    try:
+        with open(file_path, "r", encoding="utf-8") as f:
+            content = f.read().lower()
+            
+        if "from flask import" in content or "import flask" in content:
+            return "flask"
+        elif "from fastapi import" in content or "import fastapi" in content:
+            return "fastapi"
+        elif "from django import" in content or "import django" in content:
+            return "django"
+        elif "from rest_framework" in content:
+            return "djangorestframework"
+    except:
+        pass
+    
+    return None
+
+
+def get_test_file_path(source_file: str, output_dir: str) -> str:
+    """
+    Generate the path for a test file based on the source file path.
+    
+    Args:
+        source_file: Path to the source file
+        output_dir: Base directory for test files
+        
+    Returns:
+        Path where the test file should be created
+    """
+    # Get the relative path from the source file
+    rel_path = os.path.dirname(source_file)
+    
+    # Create the test directory structure
+    test_dir = os.path.join(output_dir, rel_path)
+    os.makedirs(test_dir, exist_ok=True)
+    
+    # Generate test file name
+    file_name = os.path.basename(source_file)
+    base_name, ext = os.path.splitext(file_name)
+    test_file = f"{base_name}_test{ext}"
+    
+    return os.path.join(test_dir, test_file)

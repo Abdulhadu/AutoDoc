@@ -20,6 +20,11 @@ DEFAULT_CONFIG = {
         "format": "markdown",
         "index_title": "API Documentation",
         "group_by": "module",
+    },
+    "tests": {
+        "framework": "pytest",
+        "output_dir": "tests",
+        "exclude": ["tests", "test", "testing"],
     }
 }
 

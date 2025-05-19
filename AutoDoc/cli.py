@@ -14,6 +14,7 @@ from rich import print as rprint
 
 from autodoc import AutoDoc
 from autodoc.config import save_default_config
+from autodoc.test_generator import generate_tests
 
 
 app = typer.Typer(
@@ -121,6 +122,88 @@ def generate_docs(
         f"Markdown file: [bold]{os.path.basename(result['markdown'])}[/bold]\n"
         + (f"PDF file: [bold]{os.path.basename(result['pdf'])}[/bold]\n" if 'pdf' in result else "")
         + f"Time taken: [bold]{elapsed:.2f}[/bold] seconds",
+        title="Complete",
+        expand=False
+    ))
+
+@app.command("generate-tests")
+def create_tests(
+    source: str = typer.Option(
+        ".",
+        "--source", "-s",
+        help="Path to the source code directory",
+    ),
+    output: str = typer.Option(
+        "./tests",
+        "--output", "-o",
+        help="Path where test files will be generated",
+    ),
+    framework: str = typer.Option(
+        "pytest",
+        "--framework", "-f",
+        help="Testing framework to use (pytest or unittest)",
+    ),
+    exclude: List[str] = typer.Option(
+        None,
+        "--exclude", "-e",
+        help="Directories to exclude from parsing",
+    ),
+):
+    """Generate test cases for a Python project."""
+    start_time = time.time()
+    
+    # Welcome message
+    rprint(Panel(
+        "[bold green]AutoDoc[/bold green] - Test Case Generator",
+        expand=False
+    ))
+    
+    # Validate source directory
+    if not os.path.isdir(source):
+        console.print(f"[bold red]Error:[/bold red] Source directory '{source}' does not exist.")
+        sys.exit(1)
+    
+    # Create output directory
+    os.makedirs(output, exist_ok=True)
+    
+    # Validate framework
+    if framework.lower() not in ["pytest", "unittest"]:
+        console.print(f"[bold red]Error:[/bold red] Invalid framework '{framework}'. Use 'pytest' or 'unittest'.")
+        sys.exit(1)
+    
+    try:
+        with Progress(
+            SpinnerColumn(),
+            TextColumn("[progress.description]{task.description}"),
+            BarColumn(),
+            TimeElapsedColumn(),
+            console=console,
+        ) as progress:
+            # Generate test cases
+            task = progress.add_task("Generating test cases...", total=None)
+            
+            results = generate_tests(
+                source_dir=source,
+                output_dir=output,
+                framework=framework,
+                exclude_dirs=exclude,
+            )
+            
+            progress.update(task, description="Test cases generated!", completed=True)
+    
+    except Exception as e:
+        console.print(f"[bold red]Error:[/bold red] {str(e)}")
+        sys.exit(1)
+    
+    # Completion message
+    elapsed = time.time() - start_time
+    rprint(Panel(
+        f"[bold green]Test cases generated successfully![/bold green]\n\n"
+        f"Source directory: [bold]{source}[/bold]\n"
+        f"Output directory: [bold]{output}[/bold]\n"
+        f"Framework: [bold]{framework}[/bold]\n"
+        f"Number of test files: [bold]{len(results)}[/bold]\n"
+        f"Time taken: [bold]{elapsed:.2f}[/bold] seconds",
         title="Complete",
         expand=False
     ))
